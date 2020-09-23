@@ -1,0 +1,122 @@
+Option Explicit
+Dim rcdSet As Recordset
+
+
+Private Sub CboTable_Click()
+ lblTABLE.Caption = CboTable.text
+ ChkSelect.Value = 0
+ '//
+  On Error GoTo ERRORHANDLE
+    Dim sqlSTR As String
+    Dim lblStr As String
+
+    Set rcdSet = New ADODB.Recordset
+    rcdSet.CursorLocation = adUseClient
+    sqlSTR = "SELECT * FROM [" & lblTABLE.Caption & "]"
+    rcdSet.Open sqlSTR, cnRef, adOpenStatic, adLockOptimistic
+    Load_DATA
+    Call ShowFldsLabel(Me, rcdSet)
+
+ERRORHANDLE:
+    errorMsg Err, Me.Name, "CboTables_Click()"
+End Sub
+
+Private Sub ChkSelect_Click()
+ CboTable.Visible = (ChkSelect.Value = 1)
+End Sub
+
+Private Sub CmdFirst_Click()
+rcdSet.MoveFirst
+ Call BindDatasource(Me, rcdSet, lvList, False)
+End Sub
+
+Private Sub CmdLast_Click()
+rcdSet.MoveLast
+ Call BindDatasource(Me, rcdSet, lvList, False)
+End Sub
+
+Private Sub CmdNext_Click()
+If rcdSet.EOF = True Then
+ Exit Sub
+Else
+ rcdSet.MoveNext
+Call BindDatasource(Me, rcdSet, lvList, False)
+End If
+
+End Sub
+
+Private Sub CmdPrev_Click()
+If rcdSet.BOF = True Then
+ Exit Sub
+Else
+ rcdSet.MovePrevious
+Call BindDatasource(Me, rcdSet, lvList, False)
+End If
+
+End Sub
+
+
+Private Sub Form_Load()
+  CboTable.Clear
+  LoadTables
+  Call OpenDB("REFERENCE.MDB", cnRef)
+End Sub
+
+Private Sub Form_Resize()
+With Me
+  If .WindowState = 0 Then
+   .Height = 5820
+   .Width = 6390
+  End If
+End With
+ SetWindowPos Me.hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE Or SWP_NOSIZE
+
+End Sub
+
+Private Sub LoadTables()
+
+    Dim db As Database
+    Dim qdef As QueryDef
+    Dim td As TableDef
+    Dim dbname As String
+
+    ' Open the database. replace "c:\DBfile.mdb" with your
+    ' database file name
+    
+    Set db = OpenDatabase(App.Path & "\DB\REFERENCE.mdb")
+    ' List the table names.
+    For Each td In db.TableDefs
+    ' if you want to display also the system tables, replace the line
+    ' below with:  List1.AddItem td.Name
+       If td.Attributes = 0 Then CboTable.AddItem td.Name
+    Next td
+    db.Close
+End Sub
+
+
+Private Sub Load_DATA()
+On Error GoTo ERRORHANDLE
+'// set columnheaders
+ Call InsertColumn(lvList, rcdSet)
+'//set details
+ Call FillListView(lvList, rcdSet, 3)
+ERRORHANDLE:
+      errorMsg Err, Me.Name, "load data"
+
+End Sub
+
+Private Sub lvList_Click()
+On Error GoTo ERRORHANDLE
+If addRec = True Or editRec = True Then Exit Sub
+Call BindDatasource(Me, rcdSet, lvList, True)
+ERRORHANDLE:
+    If Err.Number = 91 Then
+       Exit Sub
+    Else
+      errorMsg Err, Me.Name
+    End If
+End Sub
+
+Private Sub lvList_KeyUp(KeyCode As Integer, Shift As Integer)
+ lvList_Click
+End Sub
